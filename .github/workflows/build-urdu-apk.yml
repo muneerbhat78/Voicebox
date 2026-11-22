@@ -26,7 +26,9 @@ jobs:
         run: |
           SDKM=$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager
           yes | $SDKM --licenses > /dev/null || true
-          $SDKM 'platforms;android-37' 'build-tools;37.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
+          PLAT=$($SDKM --list | grep -o 'platforms;android-37[0-9.]*' | sort -u | head -1)
+          echo Platform package: $PLAT
+          $SDKM $PLAT 'build-tools;37.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
 
       - name: Build debug APK
         working-directory: Android
