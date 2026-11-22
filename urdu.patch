@@ -1,0 +1,384 @@
+diff --git a/Android/app/src/main/java/dev/renakoni/voicebox/studio/StudioLanguage.kt b/Android/app/src/main/java/dev/renakoni/voicebox/studio/StudioLanguage.kt
+index 2252d49..49d0ae9 100644
+--- a/Android/app/src/main/java/dev/renakoni/voicebox/studio/StudioLanguage.kt
++++ b/Android/app/src/main/java/dev/renakoni/voicebox/studio/StudioLanguage.kt
+@@ -19,6 +19,7 @@ import dev.renakoni.voicebox.core.LanguageTags
+ import dev.renakoni.voicebox.core.ReferenceLanguage
+ 
+ internal fun languageName(resources: Resources, value: String) = when (LanguageTags.normalize(value)) {
++    "urdu" -> resources.getString(R.string.language_urdu)
+     "japanese" -> resources.getString(R.string.language_japanese)
+     "english" -> resources.getString(R.string.language_english)
+     "chinese" -> resources.getString(R.string.language_chinese)
+diff --git a/Android/app/src/main/java/dev/renakoni/voicebox/studio/creation/CreatePage.kt b/Android/app/src/main/java/dev/renakoni/voicebox/studio/creation/CreatePage.kt
+index 81bab10..f7372ad 100644
+--- a/Android/app/src/main/java/dev/renakoni/voicebox/studio/creation/CreatePage.kt
++++ b/Android/app/src/main/java/dev/renakoni/voicebox/studio/creation/CreatePage.kt
+@@ -211,6 +211,7 @@ private fun Composer(vm: StudioViewModel, settings: CreationSettings) {
+             StudioButton(onClick = { vm.updateText(resources.getString(when (settings.sampleLanguage) {
+                 "ja" -> R.string.speech_sample_ja
+                 "en" -> R.string.speech_sample_en
++                "ur" -> R.string.speech_sample_ur
+                 else -> R.string.speech_sample_zh
+             })) }, enabled = !vm.busy, style = StudioButtonStyle.Quiet) {
+                 Text(resources.getString(R.string.sample_text))
+diff --git a/Android/app/src/main/res/values-zh/strings.xml b/Android/app/src/main/res/values-zh/strings.xml
+index fdaedf5..648000b 100644
+--- a/Android/app/src/main/res/values-zh/strings.xml
++++ b/Android/app/src/main/res/values-zh/strings.xml
+@@ -330,6 +330,7 @@
+     <string name="ming_emotion_surprised">惊讶</string>
+     <string name="language_japanese">日语</string>
+     <string name="language_english">英语</string>
++    <string name="language_urdu">乌尔都语 (اردو)</string>
+     <string name="language_chinese">中文</string>
+     <string name="language_auto_detect">自动识别</string>
+     <string name="language_auto">按原文 · %1$s</string>
+diff --git a/Android/app/src/main/res/values/strings.xml b/Android/app/src/main/res/values/strings.xml
+index b4babc9..d199005 100644
+--- a/Android/app/src/main/res/values/strings.xml
++++ b/Android/app/src/main/res/values/strings.xml
+@@ -334,6 +334,8 @@
+     <string name="ming_emotion_surprised">Surprised</string>
+     <string name="language_japanese">Japanese</string>
+     <string name="language_english">English</string>
++    <string name="language_urdu">Urdu (اردو)</string>
++    <string name="speech_sample_ur" translatable="false">آج ہوا بہت ہلکی ہے۔ ہم دریا کے کنارے آہستہ آہستہ چل رہے ہیں۔</string>
+     <string name="language_chinese">Chinese</string>
+     <string name="language_auto_detect">Auto-detect</string>
+     <string name="language_auto">Auto · %1$s</string>
+diff --git a/Android/core/src/main/java/dev/renakoni/voicebox/core/LanguageTags.kt b/Android/core/src/main/java/dev/renakoni/voicebox/core/LanguageTags.kt
+index 56664e1..980293e 100644
+--- a/Android/core/src/main/java/dev/renakoni/voicebox/core/LanguageTags.kt
++++ b/Android/core/src/main/java/dev/renakoni/voicebox/core/LanguageTags.kt
+@@ -24,6 +24,11 @@ object LanguageTags {
+         "hybrid-zh-en" to "hybrid-chinese-english",
+         "hybrid-en-zh" to "hybrid-chinese-english",
+ 
++        "urdu" to "urdu",
++        "ur" to "urdu",
++        "ur-pk" to "urdu",
++        "urd" to "urdu",
++
+         "korean" to "korean",
+         "ko" to "korean",
+         "kr" to "korean",
+diff --git a/Android/core/src/main/java/dev/renakoni/voicebox/core/ReferenceLanguage.kt b/Android/core/src/main/java/dev/renakoni/voicebox/core/ReferenceLanguage.kt
+index d4e1b20..4f27925 100644
+--- a/Android/core/src/main/java/dev/renakoni/voicebox/core/ReferenceLanguage.kt
++++ b/Android/core/src/main/java/dev/renakoni/voicebox/core/ReferenceLanguage.kt
+@@ -5,6 +5,7 @@ package dev.renakoni.voicebox.core
+ object ReferenceLanguage {
+     fun resolve(language: String, text: String): String = when {
+         language.isNotBlank() && language != "auto" -> LanguageTags.normalize(language)
++        text.any { it in '\u0600'..'\u06ff' || it in '\u0750'..'\u077f' } -> "urdu"
+         text.any { it in '\u3040'..'\u30ff' || it in '\uff66'..'\uff9d' } -> "japanese"
+         text.any { it in '\u3400'..'\u9fff' } -> "chinese"
+         text.any { it in 'a'..'z' || it in 'A'..'Z' } -> "english"
+diff --git a/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/GptProvider.kt b/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/GptProvider.kt
+index 8e1348c..c376949 100644
+--- a/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/GptProvider.kt
++++ b/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/GptProvider.kt
+@@ -26,7 +26,7 @@ class GptProvider(
+     override val id = "gptsovits"
+     private val deviceAcceleration = DeviceAcceleration(context)
+     override val capabilities = BackendCapabilities(
+-        listOf("zh", "ja", "en"),
++        listOf("en", "ur"),
+         setOf(VoiceImport.CHECKPOINT_PAIR, VoiceImport.RUNTIME_ARCHIVE),
+     )
+     override fun languageError(language: String, text: String) = LanguageNormalizer.scriptError(language, text)
+diff --git a/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/LanguageNormalizer.kt b/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/LanguageNormalizer.kt
+index 3af0b8b..fc0ee71 100644
+--- a/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/LanguageNormalizer.kt
++++ b/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/LanguageNormalizer.kt
+@@ -20,6 +20,7 @@ object LanguageNormalizer {
+         val codePoints = text.codePoints().iterator()
+         while (codePoints.hasNext()) {
+             when (UnicodeScript.of(codePoints.nextInt())) {
++                UnicodeScript.ARABIC -> return "urdu"
+                 UnicodeScript.HIRAGANA, UnicodeScript.KATAKANA -> return "japanese"
+                 UnicodeScript.HAN -> hasHan = true
+                 else -> Unit
+@@ -37,7 +38,7 @@ object LanguageNormalizer {
+         "english" -> "language_not_english".takeIf {
+             text.codePoints().anyMatch {
+                 val script = UnicodeScript.of(it)
+-                script == UnicodeScript.HAN || isKana(script)
++                script == UnicodeScript.HAN || script == UnicodeScript.ARABIC || isKana(script)
+             }
+         }
+         else -> null
+diff --git a/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/TextFeatureExtractor.kt b/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/TextFeatureExtractor.kt
+index cc39afd..cacdfb7 100644
+--- a/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/TextFeatureExtractor.kt
++++ b/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/TextFeatureExtractor.kt
+@@ -12,9 +12,10 @@ class DefaultTextFeatureExtractor(
+     private val japanese: TextFeatureExtractor = UnsupportedLanguageTextFeatureExtractor(),
+     private val english: TextFeatureExtractor = UnsupportedLanguageTextFeatureExtractor(),
+     private val korean: TextFeatureExtractor = UnsupportedLanguageTextFeatureExtractor(),
++    private val urdu: TextFeatureExtractor = UnsupportedLanguageTextFeatureExtractor(),
+     private val fallback: TextFeatureExtractor,
+ ) : TextFeatureExtractor {
+-    override fun close() { japanese.close(); english.close(); korean.close(); fallback.close() }
++    override fun close() { japanese.close(); english.close(); korean.close(); urdu.close(); fallback.close() }
+     override fun extract(language: String, text: String): TextFeatures {
+         val input = ChineseTextNormalizer.convertFullwidthToHalfwidth(text)
+         val selected = LanguageNormalizer.resolve(language, input)
+@@ -23,6 +24,7 @@ class DefaultTextFeatureExtractor(
+             "japanese" -> japanese.extract(selected, input)
+             "english" -> english.extract(selected, input)
+             "korean" -> korean.extract(selected, input)
++            "urdu" -> urdu.extract(selected, input)
+             else -> fallback.extract(selected, input)
+         }
+     }
+@@ -33,17 +35,20 @@ class DefaultTextFeatureExtractor(
+         fun fromAssets(
+             context: Context,
+             robertaProvider: RobertaFeatureProvider? = null,
+-        ): DefaultTextFeatureExtractor =
+-            DefaultTextFeatureExtractor(
++        ): DefaultTextFeatureExtractor {
++            val englishFrontend = EnglishTextFeatureExtractor.fromAssets(context)
++            return DefaultTextFeatureExtractor(
+                 chinese = ChineseTextFeatureExtractor(
+                     ChineseG2pAssetRepository.load(context),
+                     robertaProvider,
+                     allowZeroBert = false,
+                 ),
+                 japanese = JapaneseTextFeatureExtractor.fromAssets(context),
+-                english = EnglishTextFeatureExtractor.fromAssets(context),
++                english = englishFrontend,
++                urdu = UrduTextFeatureExtractor(englishFrontend),
+                 fallback = UnsupportedLanguageTextFeatureExtractor(),
+             )
++        }
+     }
+ }
+ 
+diff --git a/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/UrduTextFeatureExtractor.kt b/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/UrduTextFeatureExtractor.kt
+new file mode 100644
+index 0000000..d3e20a5
+--- /dev/null
++++ b/Android/model/gptsovits/src/main/java/dev/renakoni/voicebox/model/gptsovits/UrduTextFeatureExtractor.kt
+@@ -0,0 +1,219 @@
++package dev.renakoni.voicebox.model.gptsovits
++
++/**
++ * Urdu (Arabic script) frontend. The GPT-SoVITS weights only know the Chinese/Japanese/English
++ * phoneme inventory, so Urdu sounds are mapped onto the closest existing English symbols.
++ * Latin words inside the text are sent to the English frontend, so mixed Urdu/English works.
++ *
++ * Urdu is normally written without short vowels, so vowels are guessed with simple rules.
++ * Expect an understandable but slightly accented result until a model is fine-tuned on Urdu.
++ */
++class UrduTextFeatureExtractor(private val english: TextFeatureExtractor) : TextFeatureExtractor {
++    // The English extractor is owned and closed by DefaultTextFeatureExtractor.
++    override fun close() = Unit
++
++    override fun extract(language: String, text: String): TextFeatures {
++        val symbols = UrduG2p.phonemes(text) { run ->
++            runCatching { english.extract("english", run).symbols }.getOrDefault(emptyList())
++        }.filter { it in GenieSymbols.symbolToId }
++        require(symbols.isNotEmpty()) { "Please enter Urdu or English text." }
++        return TextFeatures(text.trim(), symbols, symbolsToTensor(symbols), zeroBert(symbols.size))
++    }
++}
++
++internal object UrduG2p {
++    private const val ZABAR = '\u064E'
++    private const val ZER = '\u0650'
++    private const val PESH = '\u064F'
++    private const val SHADDA = '\u0651'
++
++    // Tanween, sukun, dagger alif, hamza marks, tatweel, joiners: no sound of their own here.
++    private val ignored = setOf(
++        '\u064B', '\u064C', '\u064D', '\u0652', '\u0653', '\u0654', '\u0655', '\u0656', '\u0657',
++        '\u0658', '\u0659', '\u065A', '\u065B', '\u065C', '\u065D', '\u065E', '\u065F', '\u0670',
++        '\u0640', '\u200C', '\u200D', '\u200E', '\u200F',
++    )
++
++    private val consonants: Map<Char, List<String>> = mapOf(
++        'ب' to listOf("B"), 'پ' to listOf("P"), 'ت' to listOf("T"), 'ٹ' to listOf("T"),
++        'ث' to listOf("S"), 'ج' to listOf("JH"), 'چ' to listOf("CH"), 'ح' to listOf("HH"),
++        'خ' to listOf("K", "HH"), 'د' to listOf("D"), 'ڈ' to listOf("D"), 'ذ' to listOf("Z"),
++        'ر' to listOf("R"), 'ڑ' to listOf("R"), 'ز' to listOf("Z"), 'ژ' to listOf("ZH"),
++        'س' to listOf("S"), 'ش' to listOf("SH"), 'ص' to listOf("S"), 'ض' to listOf("Z"),
++        'ط' to listOf("T"), 'ظ' to listOf("Z"), 'غ' to listOf("G"), 'ف' to listOf("F"),
++        'ق' to listOf("K"), 'ک' to listOf("K"), 'گ' to listOf("G"), 'ل' to listOf("L"),
++        'م' to listOf("M"), 'ن' to listOf("N"),
++    )
++
++    private val vowelLetters = setOf('ا', 'آ', 'و', 'ی', 'ے')
++
++    private val exceptions: Map<String, List<String>> = mapOf(
++        "ہے" to listOf("HH", "EY1"), "ہیں" to listOf("HH", "EY1", "N"),
++        "ہوں" to listOf("HH", "OW1", "N"), "ہو" to listOf("HH", "OW1"),
++        "کی" to listOf("K", "IY1"), "کے" to listOf("K", "EY1"), "کا" to listOf("K", "AA1"),
++        "کو" to listOf("K", "OW1"), "کہ" to listOf("K", "IH0"), "میں" to listOf("M", "EY1", "N"),
++        "سے" to listOf("S", "EY1"), "نے" to listOf("N", "EY1"), "پر" to listOf("P", "AH0", "R"),
++        "اور" to listOf("AO1", "R"), "یہ" to listOf("Y", "EY1"), "وہ" to listOf("W", "OW1"),
++        "نہیں" to listOf("N", "AH0", "HH", "IY1", "N"), "کیوں" to listOf("K", "Y", "OW1", "N"),
++        "آپ" to listOf("AA1", "P"), "ہم" to listOf("HH", "AH0", "M"),
++        "ایک" to listOf("EY1", "K"), "اردو" to listOf("UH0", "R", "D", "UW1"),
++        "کیسے" to listOf("K", "EY1", "S", "EY1"),
++    )
++
++    private val digitWords = listOf("صفر", "ایک", "دو", "تین", "چار", "پانچ", "چھ", "سات", "آٹھ", "نو")
++
++    fun phonemes(text: String, english: (String) -> List<String>): List<String> {
++        val out = ArrayList<String>()
++        var i = 0
++        val n = text.length
++        while (i < n) {
++            val c = text[i]
++            when {
++                isUrduLetter(c) -> {
++                    val start = i
++                    while (i < n && isUrduLetter(text[i])) i++
++                    out += word(text.substring(start, i))
++                }
++                urduDigit(c) >= 0 -> { out += word(digitWords[urduDigit(c)]); i++ }
++                isLatin(c) -> {
++                    val start = i
++                    var end = i
++                    while (i < n) {
++                        val d = text[i]
++                        val joiner = (d == '\'' || d == '’' || d == '-') &&
++                            i > start && isLatin(text[i - 1]) && i + 1 < n && isLatin(text[i + 1])
++                        if (isLatin(d) || joiner) { i++; end = i; continue }
++                        if (d.isWhitespace()) {
++                            var j = i
++                            while (j < n && text[j].isWhitespace()) j++
++                            if (j < n && isLatin(text[j])) { i = j; continue }
++                        }
++                        break
++                    }
++                    out += english(text.substring(start, end))
++                }
++                else -> { punctuation(c)?.let { out += it }; i++ }
++            }
++        }
++        return out
++    }
++
++    private fun punctuation(c: Char): String? = when (c) {
++        '۔', '.', '。' -> "."
++        '،', ',', '，', '؛', ';', ':', '：' -> ","
++        '؟', '?', '？' -> "?"
++        '!', '！' -> "!"
++        else -> null
++    }
++
++    private fun isLatin(c: Char) = c in 'A'..'Z' || c in 'a'..'z' || c in '0'..'9'
++
++    private fun urduDigit(c: Char): Int = when (c) {
++        in '\u0660'..'\u0669' -> c - '\u0660'
++        in '\u06F0'..'\u06F9' -> c - '\u06F0'
++        else -> -1
++    }
++
++    private fun isUrduLetter(c: Char) =
++        c in '\u0620'..'\u065F' || c in '\u066E'..'\u06D3' || c == '\u06D5' || c == '\u0670' ||
++            c in '\u0750'..'\u077F' || c in '\uFB50'..'\uFDFF' || c in '\uFE70'..'\uFEFF' || c == '\u200C'
++
++    private fun normalizeLetters(raw: String): String = buildString {
++        for (c in raw) {
++            if (c in ignored) continue
++            append(
++                when (c) {
++                    'ي', 'ى', 'ێ' -> 'ی'
++                    'ك' -> 'ک'
++                    'ه', 'ە', 'ۃ', 'ۂ' -> 'ہ'
++                    'ۓ' -> 'ے'
++                    'ٱ', 'أ', 'إ' -> 'ا'
++                    'ؤ' -> 'و'
++                    'ڤ' -> 'ف'
++                    else -> c
++                },
++            )
++        }
++    }
++
++    /** One Urdu word (no spaces) to phoneme symbols. */
++    fun word(raw: String): List<String> {
++        val w = normalizeLetters(raw)
++        exceptions[w]?.let { return it }
++        val out = ArrayList<String>()
++        var cluster = 0          // consonants since the last real vowel
++        var afterCons = false    // last sound was a consonant, so a following و/ی acts as a vowel
++        var i = 0
++
++        fun consonant(phones: List<String>) {
++            out += phones
++            i++
++            if (w.getOrNull(i) == 'ھ') { out += "HH"; i++ }
++            if (w.getOrNull(i) == SHADDA) { out += phones; i++ }
++            cluster++
++            afterCons = true
++            when (w.getOrNull(i)) {
++                ZABAR -> { out += "AH0"; i++; cluster = 0; afterCons = false }
++                ZER -> { out += "IH0"; i++; cluster = 0; afterCons = false }
++                PESH -> { out += "UH0"; i++; cluster = 0; afterCons = false }
++                else -> {
++                    val next = w.getOrNull(i)
++                    // Short vowels are not written: guess a schwa in consonant clusters.
++                    if (next != null && next in consonants && cluster % 2 == 1) out += "AH0"
++                }
++            }
++        }
++
++        fun vowel(phones: List<String>, consumed: Int = 1) {
++            out += phones
++            i += consumed
++            cluster = 0
++            afterCons = false
++        }
++
++        while (i < w.length) {
++            val c = w[i]
++            val next = w.getOrNull(i + 1)
++            when {
++                c in consonants -> consonant(consonants.getValue(c))
++                c == 'ھ' -> consonant(listOf("HH"))
++                c == 'آ' -> vowel(listOf("AA1"))
++                c == 'ا' -> if (i == 0) {
++                    when (next) {
++                        'و' -> vowel(listOf("AO1"), 2)
++                        'ی', 'ے' -> vowel(listOf("EY1"), 2)
++                        ZER -> vowel(listOf("IH0"), 2)
++                        PESH -> vowel(listOf("UH0"), 2)
++                        ZABAR -> vowel(listOf("AH0"), 2)
++                        else -> vowel(listOf("AH0"))
++                    }
++                } else vowel(listOf("AA1"))
++                c == 'ع' -> if (next != null && next in vowelLetters) i++ else vowel(listOf("AH0"))
++                c == 'و' -> if (afterCons) vowel(listOf("OW1")) else { out += "W"; i++; afterCons = true }
++                c == 'ی' -> when {
++                    next == 'ا' || next == 'و' || !afterCons -> { out += "Y"; i++; afterCons = true }
++                    next == 'ں' && i + 2 == w.length -> vowel(listOf("EY1"))
++                    else -> vowel(listOf("IY1"))
++                }
++                c == 'ے' -> vowel(listOf("EY1"))
++                c == 'ئ' -> {
++                    // Hamza seat: carries a short vowel after a consonant; the following ی/ے is the vowel.
++                    if (afterCons) out += "AH0"
++                    i++
++                    cluster = 0
++                    afterCons = true
++                }
++                c == 'ں' -> { out += "N"; i++; afterCons = true }
++                c == 'ہ' -> when {
++                    i > 0 && i == w.length - 1 && w[i - 1] == 'ی' -> vowel(listOf("AH0"))
++                    i == 0 || !afterCons -> consonant(listOf("HH"))
++                    next != null && next in vowelLetters -> { out += "AH0"; consonant(listOf("HH")) }
++                    i == w.length - 1 -> vowel(listOf("AH0"))
++                    else -> vowel(listOf("EH0"))
++                }
++                else -> i++
++            }
++        }
++        return out
++    }
++}
